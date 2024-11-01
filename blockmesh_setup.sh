@@ -79,14 +79,29 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
     fi
     show "Downloaded: $BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
 
-    # Extract the downloaded file into the 'blockmesh' folder
+    # Create a temporary directory for extraction
+    TEMP_DIR=$(mktemp -d)
+
+    # Extract the downloaded file into the temporary directory
     show "Extracting file..."
-    tar -xvzf "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz" -C "$BLOCKMESH_DIR" && rm "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
+    tar -xvzf "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz" -C "$TEMP_DIR" && rm "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
     if [ $? -ne 0 ]; then
         show "Failed to extract file."
         exit 1
     fi
-    show "Extraction complete."
+
+    # Move the extracted files to the target/release directory
+    show "Moving files to $BLOCKMESH_DIR/target/release..."
+    mkdir -p "$BLOCKMESH_DIR/target/release"
+    mv "$TEMP_DIR/"* "$BLOCKMESH_DIR/target/release/"
+    if [ $? -ne 0 ]; then
+        show "Failed to move extracted files."
+        exit 1
+    fi
+
+    # Clean up the temporary directory
+    rm -rf "$TEMP_DIR"
+    show "Extraction and move complete."
 else
     show "You are already using the latest version: $LATEST_VERSION."
 fi
@@ -141,34 +156,4 @@ SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 cat <<EOL | sudo tee "$SERVICE_FILE"
 [Unit]
-Description=Blockmesh Service
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$BLOCKMESH_DIR/target/release
-ExecStart=$BLOCKMESH_DIR/target/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
-Restart=always
-Environment=EMAIL=${EMAIL}
-Environment=PASSWORD=${PASSWORD}
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-show "Service file created/updated at $SERVICE_FILE"
-
-# Reload the systemd daemon to recognize the new service file
-sudo systemctl daemon-reload
-
-# Enable and start the service
-sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl start "$SERVICE_NAME"
-show "Blockmesh service started."
-
-# Display real-time logs
-show "Displaying real-time logs. Press Ctrl+C to stop."
-journalctl -u "$SERVICE_NAME" -f
-
-# Exit the script after displaying logs
-exit 0
+Description=Block
