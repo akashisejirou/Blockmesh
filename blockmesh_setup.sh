@@ -79,21 +79,6 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
     fi
     show "Downloaded: $BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
 
-    # Create a temporary directory for extraction
-    TEMP_DIR=$(mktemp -d)
-
-    # Check if blockmesh/target directory exists and delete all contents before extracting
-    TARGET_DIR="$BLOCKMESH_DIR/target"
-    if [ -d "$TARGET_DIR" ]; then
-        show "Removing all contents in directory: $TARGET_DIR"
-        rm -rf "$TARGET_DIR/*"
-        if [ $? -ne 0 ]; then
-            show "Failed to remove contents of directory $TARGET_DIR."
-            exit 1
-        fi
-    else
-        mkdir -p "$TARGET_DIR"
-    fi
 
     # Extract the downloaded file into the temporary directory
     show "Extracting file..."
