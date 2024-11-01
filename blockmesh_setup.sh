@@ -123,8 +123,8 @@ Description=Blockmesh Service
 After=network.target
 [Service]
 Type=simple
-WorkingDirectory=$BLOCKMESH_DIR/target/release
-ExecStart=$BLOCKMESH_DIR/target/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
+WorkingDirectory=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release
+ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
 Restart=always
 Environment=EMAIL=${EMAIL}
 Environment=PASSWORD=${PASSWORD}
