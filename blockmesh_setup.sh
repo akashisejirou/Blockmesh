@@ -82,6 +82,19 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
     # Create a temporary directory for extraction
     TEMP_DIR=$(mktemp -d)
 
+    # Check if blockmesh/target directory exists and delete all contents before extracting
+    TARGET_DIR="$BLOCKMESH_DIR/target"
+    if [ -d "$TARGET_DIR" ]; then
+        show "Removing all contents in directory: $TARGET_DIR"
+        rm -rf "$TARGET_DIR/*"
+        if [ $? -ne 0 ]; then
+            show "Failed to remove contents of directory $TARGET_DIR."
+            exit 1
+        fi
+    else
+        mkdir -p "$TARGET_DIR"
+    fi
+
     # Extract the downloaded file into the temporary directory
     show "Extracting file..."
     tar -xvzf "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz" -C "$TEMP_DIR" && rm "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
@@ -90,10 +103,9 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
         exit 1
     fi
 
-    # Move the extracted files to the target/release directory
-    show "Moving files to $BLOCKMESH_DIR/target/release..."
-    mkdir -p "$BLOCKMESH_DIR/target/release"
-    mv "$TEMP_DIR/"* "$BLOCKMESH_DIR/target/release/"
+    # Move the extracted files to the blockmesh/target directory
+    show "Moving files to $TARGET_DIR..."
+    mv "$TEMP_DIR/"* "$TARGET_DIR/"
     if [ $? -ne 0 ]; then
         show "Failed to move extracted files."
         exit 1
@@ -161,8 +173,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=$BLOCKMESH_DIR/target/release
-ExecStart=$BLOCKMESH_DIR/target/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
+WorkingDirectory=$BLOCKMESH_DIR/target
+ExecStart=$BLOCKMESH_DIR/target/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
 Restart=always
 Environment=EMAIL=${EMAIL}
 Environment=PASSWORD=${PASSWORD}
@@ -171,19 +183,20 @@ Environment=PASSWORD=${PASSWORD}
 WantedBy=multi-user.target
 EOL
 
-show "Service file created/updated at $SERVICE_FILE"
-
-# Reload the systemd daemon to recognize the new service file
+# Reload systemd to recognize the new service
 sudo systemctl daemon-reload
 
-# Enable and start the service
+# Enable the service to start on boot
 sudo systemctl enable "$SERVICE_NAME"
+
+# Start the service
 sudo systemctl start "$SERVICE_NAME"
-show "Blockmesh service started."
 
-# Display real-time logs
-show "Displaying real-time logs. Press Ctrl+C to stop."
-journalctl -u "$SERVICE_NAME" -f
+show "Blockmesh service is now running."
 
-# Exit the script after displaying logs
+# Show the service logs
+show "Service logs:"
+sudo journalctl -u "$SERVICE_NAME" -f
+
+# Exit the script
 exit 0
