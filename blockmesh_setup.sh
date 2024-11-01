@@ -156,4 +156,34 @@ SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 
 cat <<EOL | sudo tee "$SERVICE_FILE"
 [Unit]
-Description=Block
+Description=Blockmesh Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$BLOCKMESH_DIR/target/release
+ExecStart=$BLOCKMESH_DIR/target/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
+Restart=always
+Environment=EMAIL=${EMAIL}
+Environment=PASSWORD=${PASSWORD}
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+show "Service file created/updated at $SERVICE_FILE"
+
+# Reload the systemd daemon to recognize the new service file
+sudo systemctl daemon-reload
+
+# Enable and start the service
+sudo systemctl enable "$SERVICE_NAME"
+sudo systemctl start "$SERVICE_NAME"
+show "Blockmesh service started."
+
+# Display real-time logs
+show "Displaying real-time logs. Press Ctrl+C to stop."
+journalctl -u "$SERVICE_NAME" -f
+
+# Exit the script after displaying logs
+exit 0
