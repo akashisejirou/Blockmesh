@@ -82,22 +82,11 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
 
     # Extract the downloaded file into the temporary directory
     show "Extracting file..."
-    tar -xvzf "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz" -C "$TEMP_DIR" && rm "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
+    tar -xvzf "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz" -C "$BLOCKMESH_DIR" && rm "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
     if [ $? -ne 0 ]; then
         show "Failed to extract file."
         exit 1
     fi
-
-    # Move the extracted files to the blockmesh/target directory
-    show "Moving files to $TARGET_DIR..."
-    mv "$TEMP_DIR/"* "$TARGET_DIR/"
-    if [ $? -ne 0 ]; then
-        show "Failed to move extracted files."
-        exit 1
-    fi
-
-    # Clean up the temporary directory
-    rm -rf "$TEMP_DIR"
     show "Extraction and move complete."
 else
     show "You are already using the latest version: $LATEST_VERSION."
@@ -159,7 +148,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$BLOCKMESH_DIR/target
-ExecStart=$BLOCKMESH_DIR/target/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
+ExecStart=$BLOCKMESH_DIR/target/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
 Restart=always
 Environment=EMAIL=${EMAIL}
 Environment=PASSWORD=${PASSWORD}
