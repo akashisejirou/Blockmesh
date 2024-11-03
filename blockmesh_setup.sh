@@ -37,7 +37,7 @@ check_latest_version
 # Detect the architecture before downloading binaries
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
-    DOWNLOAD_URL="https://github.com/block-mesh/block-mesh-monorepo/releases/download/v0.0.321/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
+    DOWNLOAD_URL="https://github.com/block-mesh/block-mesh-monorepo/releases/download/v0.0.331/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
 elif [ "$ARCH" = "arm64" ]; then
     show "Unsupported architecture: $ARCH"
     exit 1
