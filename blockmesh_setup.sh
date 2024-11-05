@@ -3,6 +3,7 @@
 show() {
     echo "$1"
 }
+
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
     show "jq not found, installing..."
@@ -13,38 +14,53 @@ if ! command -v jq &> /dev/null; then
         exit 1
     fi
 fi
-# Function to get the latest version
+
+# Function to get the latest available version with binary
 check_latest_version() {
-    local REPO_URL="https://api.github.com/repos/block-mesh/block-mesh-monorepo/releases/latest"
-    for i in {1..3}; do
-        LATEST_VERSION=$(curl -s "$REPO_URL" | jq -r '.tag_name')
+    local REPO_URL="https://api.github.com/repos/block-mesh/block-mesh-monorepo/releases"
+    
+    show "Checking for the latest release with available binary file..."
+    
+    # Loop through releases to find one with a downloadable binary
+    for page in {1..5}; do  # Adjust the page limit if needed
+        RELEASES=$(curl -s "${REPO_URL}?page=$page&per_page=10")
         if [ $? -ne 0 ]; then
             show "curl failed. Please ensure curl is installed and working properly."
             exit 1
         fi
-        if [ -n "$LATEST_VERSION" ]; then
-            show "Latest version available: $LATEST_VERSION"
-            return 0
-        fi
-        show "Attempt $i: Failed to fetch the latest version. Retrying..."
-        sleep 2
+        
+        # Loop through each release and check for the binary file
+        echo "$RELEASES" | jq -c '.[]' | while read -r release; do
+            VERSION=$(echo "$release" | jq -r '.tag_name')
+            ASSETS_URL=$(echo "$release" | jq -r '.assets_url')
+            
+            # Get assets for this release
+            ASSETS=$(curl -s "$ASSETS_URL")
+            BINARY_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | test("blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz")) | .browser_download_url')
+            
+            if [ -n "$BINARY_URL" ]; then
+                show "Found version with binary: $VERSION"
+                DOWNLOAD_URL="$BINARY_URL"
+                LATEST_VERSION="$VERSION"
+                return 0
+            fi
+        done
     done
-    show "Failed to fetch the latest version after 3 attempts. Please check your internet connection or GitHub API limits."
+    
+    show "No available version with binary file found."
     exit 1
 }
-# Call the function to get the latest version
+
+# Call the function to get the latest available version with binary
 check_latest_version
+
 # Detect the architecture before downloading binaries
 ARCH=$(uname -m)
-if [ "$ARCH" = "x86_64" ]; then
-    DOWNLOAD_URL="https://github.com/block-mesh/block-mesh-monorepo/releases/download/v0.0.339/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
-elif [ "$ARCH" = "arm64" ]; then
-    show "Unsupported architecture: $ARCH"
-    exit 1
-else
+if [ "$ARCH" != "x86_64" ]; then
     show "Unsupported architecture: $ARCH"
     exit 1
 fi
+
 # Create 'blockmesh' directory if it doesn't exist
 BLOCKMESH_DIR="$HOME/blockmesh"
 if [ ! -d "$BLOCKMESH_DIR" ]; then
@@ -55,11 +71,12 @@ if [ ! -d "$BLOCKMESH_DIR" ]; then
         exit 1
     fi
 fi
+
 # Check if the current version matches the latest version
 CURRENT_VERSION=$(grep -oP '(?<=blockmesh_)[^/]*' "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu" 2>/dev/null)
 if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
     # If not up to date, download the latest version
-    show "Downloading blockmesh-cli..."
+    show "Downloading blockmesh-cli version $LATEST_VERSION..."
     curl -L "$DOWNLOAD_URL" -o "$BLOCKMESH_DIR/blockmesh-cli-x86_64-unknown-linux-gnu.tar.gz"
     if [ $? -ne 0 ]; then
         show "Failed to download file. Please check your internet connection."
@@ -77,10 +94,12 @@ if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
 else
     show "You are already using the latest version: $LATEST_VERSION."
 fi
+
 # Set the service name
 SERVICE_NAME="blockmesh"
 # Reload systemd daemon before checking anything
 sudo systemctl daemon-reload
+
 # Check if the service exists
 if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
     # If the service exists, check if it's running
@@ -115,12 +134,14 @@ else
     read -s -p "Enter your password: " PASSWORD
     echo
 fi
+
 # Create or update the systemd service file
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 cat <<EOL | sudo tee "$SERVICE_FILE"
 [Unit]
 Description=Blockmesh Service
 After=network.target
+
 [Service]
 Type=simple
 WorkingDirectory=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release
@@ -128,18 +149,23 @@ ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli l
 Restart=always
 Environment=EMAIL=${EMAIL}
 Environment=PASSWORD=${PASSWORD}
+
 [Install]
 WantedBy=multi-user.target
 EOL
 show "Service file created/updated at $SERVICE_FILE"
+
 # Reload the systemd daemon to recognize the new service file
 sudo systemctl daemon-reload
+
 # Enable and start the service
 sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl start "$SERVICE_NAME"
 show "Blockmesh service started."
+
 # Display real-time logs
 show "Displaying real-time logs. Press Ctrl+C to stop."
 journalctl -u "$SERVICE_NAME" -f
+
 # Exit the script after displaying logs
 exit 0
