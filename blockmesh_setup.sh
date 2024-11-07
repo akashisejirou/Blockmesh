@@ -28,8 +28,12 @@ check_latest_version() {
             exit 1
         fi
         
+        # Get the number of releases on this page
+        release_count=$(echo "$RELEASES" | jq '. | length')
+        
         # Loop through each release and check for the binary file
-        echo "$RELEASES" | jq -c '.[]' | while read -r release; do
+        for i in $(seq 0 $((release_count-1))); do
+            release=$(echo "$RELEASES" | jq -r ".[$i]")
             VERSION=$(echo "$release" | jq -r '.tag_name')
             ASSETS_URL=$(echo "$release" | jq -r '.assets_url')
             
