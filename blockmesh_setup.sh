@@ -42,7 +42,7 @@ check_latest_version() {
                 show "Found version with binary: $VERSION"
                 DOWNLOAD_URL="$BINARY_URL"
                 LATEST_VERSION="$VERSION"
-                return 0
+               exit 1
             fi
         done
     done
