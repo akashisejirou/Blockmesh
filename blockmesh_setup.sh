@@ -113,8 +113,8 @@ if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
         sleep 5
     fi
     # Get existing email and password if available
-    EMAIL=$(systemctl show "$SERVICE_NAME" -p Environment | grep -oP '(?<=EMAIL=).*')
-    PASSWORD=$(systemctl show "$SERVICE_NAME" -p Environment | grep -oP '(?<=PASSWORD=).*')
+    EMAIL=$(systemctl show "$SERVICE_NAME" -p Environment | awk -F'=' '/^Environment=EMAIL/ {print $2}')
+    PASSWORD=$(systemctl show "$SERVICE_NAME" -p Environment | awk -F'=' '/^Environment=PASSWORD/ {print $2}')
     # Ask if the user wants to update the email or password
     read -p "Do you want to change your email? (yes/no): " change_email
     if [ "$change_email" == "yes" ]; then
