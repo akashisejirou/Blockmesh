@@ -15,7 +15,6 @@ if ! command -v jq &> /dev/null; then
     fi
 fi
 
-# Function to get the latest available version with binary
 check_latest_version() {
     local REPO_URL="https://api.github.com/repos/block-mesh/block-mesh-monorepo/releases"
     
@@ -42,13 +41,16 @@ check_latest_version() {
                 show "Found version with binary: $VERSION"
                 DOWNLOAD_URL="$BINARY_URL"
                 LATEST_VERSION="$VERSION"
-               exit 1
+                break 2  # Exit both the for and while loops
             fi
         done
     done
     
-    show "No available version with binary file found."
-    exit 1
+    # If no version is found after the loop
+    if [ -z "$LATEST_VERSION" ]; then
+        show "No available version with binary file found."
+        exit 1
+    fi
 }
 
 # Call the function to get the latest available version with binary
