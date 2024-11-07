@@ -41,16 +41,14 @@ check_latest_version() {
                 show "Found version with binary: $VERSION"
                 DOWNLOAD_URL="$BINARY_URL"
                 LATEST_VERSION="$VERSION"
-                break 2  # Exit both the for and while loops
+                return 0  # Exit the function successfully
             fi
         done
     done
     
     # If no version is found after the loop
-    if [ -z "$LATEST_VERSION" ]; then
-        show "No available version with binary file found."
-        exit 1
-    fi
+    show "No available version with binary file found."
+    exit 1
 }
 
 # Call the function to get the latest available version with binary
