@@ -142,7 +142,7 @@ fi
 
 # Create or update the systemd service file
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
-cat <<EOL | sudo tee "$SERVICE_FILE"
+cat <<EOL | sudo tee "$SERVICE_FILE" > /dev/null
 [Unit]
 Description=Blockmesh Service
 After=network.target
