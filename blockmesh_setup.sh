@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Function to display messages
 show() {
     echo "$1"
@@ -149,10 +150,10 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release
-ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli login --email '$EMAIL' --password '$PASSWORD'
+ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli login --email "\${EMAIL}" --password "\${PASSWORD}"
 Restart=always
-Environment=EMAIL=${EMAIL}
-Environment=PASSWORD=${PASSWORD}
+Environment="EMAIL=${EMAIL}"
+Environment="PASSWORD=${PASSWORD}"
 
 [Install]
 WantedBy=multi-user.target
