@@ -128,7 +128,7 @@ if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
     fi
 else
     # If the service does not exist, inform the user about account creation
-    show "Service $SERVICE_NAME does not exist. Before proceeding, please ensure you have created an account at: https://app.blockmesh.xyz/register?invite_code=2ad3bf83-bf2c-477a-8440-b98784cc71d7"
+    show show "\033[0;31mService $SERVICE_NAME does not exist. Before proceeding, please ensure you have created an account at: https://app.blockmesh.xyz/register?invite_code=robinbm (Recommended to create new account for each Node)\033[0m"
     read -p "Have you created an account? (yes/no): " account_created
     if [ "$account_created" != "yes" ]; then
         show "Please create an account before proceeding."
