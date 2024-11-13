@@ -102,6 +102,7 @@ fi
 
 # Set the service name
 SERVICE_NAME="blockmesh"
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 # Reload systemd daemon before checking anything
 sudo systemctl daemon-reload
 
@@ -112,14 +113,16 @@ if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
         sudo systemctl stop "$SERVICE_NAME"
         sleep 5
     fi
-    # Get existing email and password if available
-    EMAIL=$(systemctl show "$SERVICE_NAME" -p Environment | awk -F'=' '/^Environment=EMAIL/ {print $2}')
-    PASSWORD=$(systemctl show "$SERVICE_NAME" -p Environment | awk -F'=' '/^Environment=PASSWORD/ {print $2}')
+    # Get existing email and password if available and if not updating
+    EMAIL=$(systemctl show "$SERVICE_NAME" -p Environment | grep -oP '(?<=EMAIL=).+')
+    PASSWORD=$(systemctl show "$SERVICE_NAME" -p Environment | grep -oP '(?<=PASSWORD=).+')
+
     # Ask if the user wants to update the email or password
     read -p "Do you want to change your email? (yes/no): " change_email
     if [ "$change_email" == "yes" ]; then
         read -p "Enter your new email: " EMAIL
     fi
+
     read -s -p "Do you want to change your password? (yes/no): " change_password
     echo
     if [ "$change_password" == "yes" ]; then
@@ -127,7 +130,7 @@ if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
         echo
     fi
 else
-    # If the service does not exist, inform the user about account creation
+    # If the service does not exist, prompt to create an account and ask for credentials
     echo -e "\e[1;31mService $SERVICE_NAME does not exist. Before proceeding, please ensure you have created an account at: https://app.blockmesh.xyz/register?invite_code=robinbm (Recommended to create new account for each Node)\e[0m"
     read -p "Have you created an account? (yes/no): " account_created
     if [ "$account_created" != "yes" ]; then
@@ -140,9 +143,10 @@ else
     echo
 fi
 
-# Create or update the systemd service file
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
-cat <<EOL | sudo tee "$SERVICE_FILE" > /dev/null
+# Only rewrite the service file if credentials were updated or the service does not exist
+if [ "$change_email" == "yes" ] || [ "$change_password" == "yes" ] || [ ! -f "$SERVICE_FILE" ]; then
+    # Create or update the systemd service file
+    cat <<EOL | sudo tee "$SERVICE_FILE" > /dev/null
 [Unit]
 Description=Blockmesh Service
 After=network.target
@@ -150,7 +154,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release
-ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli login --email '${EMAIL}' --password '${PASSWORD}'
+ExecStart=$BLOCKMESH_DIR/target/x86_64-unknown-linux-gnu/release/blockmesh-cli login --email ${EMAIL} --password ${PASSWORD}
 Restart=no
 Environment=EMAIL=${EMAIL}
 Environment=PASSWORD=${PASSWORD}
@@ -158,7 +162,8 @@ Environment=PASSWORD=${PASSWORD}
 [Install]
 WantedBy=multi-user.target
 EOL
-show "Service file created/updated at $SERVICE_FILE"
+    show "Service file created/updated at $SERVICE_FILE"
+fi
 
 # Reload the systemd daemon to recognize the new service file
 sudo systemctl daemon-reload
