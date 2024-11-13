@@ -106,6 +106,9 @@ SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
 # Reload systemd daemon before checking anything
 sudo systemctl daemon-reload
 
+# Variable to track whether we need to create/update the service file
+CREATE_SERVICE_FILE=false
+
 # Check if the service exists
 if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
     # If the service exists, check if it's running
@@ -121,13 +124,15 @@ if systemctl status "$SERVICE_NAME" > /dev/null 2>&1; then
     read -p "Do you want to change your email? (yes/no): " change_email
     if [ "$change_email" == "yes" ]; then
         read -p "Enter your new email: " EMAIL
+        CREATE_SERVICE_FILE=true
     fi
 
-    read -s -p "Do you want to change your password? (yes/no): " change_password
+    read -p "Do you want to change your password? (yes/no): " change_password
     echo
     if [ "$change_password" == "yes" ]; then
         read -s -p "Enter your new password: " PASSWORD
         echo
+        CREATE_SERVICE_FILE=true
     fi
 else
     # If the service does not exist, prompt to create an account and ask for credentials
@@ -141,10 +146,11 @@ else
     read -p "Enter your email: " EMAIL
     read -s -p "Enter your password: " PASSWORD
     echo
+    CREATE_SERVICE_FILE=true
 fi
 
-# Only rewrite the service file if credentials were updated or the service does not exist
-if [ "$change_email" == "yes" ] || [ "$change_password" == "yes" ] || [ ! -f "$SERVICE_FILE" ]; then
+# Only rewrite the service file if necessary
+if [ "$CREATE_SERVICE_FILE" == "true" ]; then
     # Create or update the systemd service file
     cat <<EOL | sudo tee "$SERVICE_FILE" > /dev/null
 [Unit]
